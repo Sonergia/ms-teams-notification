@@ -1,28 +1,24 @@
-export function createMessageCard(messageCardObj: {[key: string]: any}): any {
-  let potentialAction = []
+import {PotentialAction} from './models'
 
+export function createMessageCard(messageCardObj: {[key: string]: any}): any {
   let avatar_url = messageCardObj?.author?.avatar_url
     ? messageCardObj.author.avatar_url
     : 'https://www.gravatar.com/avatar/05b6d8cc7c662bf81e01b39254f88a48?d=identicon'
 
   if (messageCardObj.viewChanges) {
-    potentialAction.push({
-      '@context': 'http://schema.org',
-      target: [messageCardObj.commit.data.html_url],
-      '@type': 'ViewAction',
-      name: 'View Commit Changes'
-    })
+    messageCardObj.potentialAction.unshift(
+      new PotentialAction('View Commit Changes', [
+        messageCardObj.commit.data.html_url
+      ])
+    )
   }
 
   if (messageCardObj.viewWorkflowRun) {
-    potentialAction.push({
-      '@context': 'http://schema.org',
-      target: [
+    messageCardObj.potentialAction.unshift(
+      new PotentialAction('View Workflow Run', [
         `${messageCardObj.repoUrl}/actions/runs/${messageCardObj.runId}`
-      ],
-      '@type': 'ViewAction',
-      name: 'View Workflow Run'
-    })
+      ])
+    )
   }
 
   if (messageCardObj.viewPullRequest && messageCardObj.pullNumber != '') {
@@ -33,12 +29,7 @@ export function createMessageCard(messageCardObj: {[key: string]: any}): any {
       name = 'View Review'
       target = [messageCardObj.pullReview]
     }
-    potentialAction.push({
-      '@context': 'http://schema.org',
-      target: target,
-      '@type': 'ViewAction',
-      name: name
-    })
+    messageCardObj.potentialAction.unshift(new PotentialAction(name, target))
   }
 
   const messageCard = {
@@ -62,11 +53,11 @@ export function createMessageCard(messageCardObj: {[key: string]: any}): any {
         facts: messageCardObj.factsObj
       }
     ],
-    potentialAction: potentialAction
+    potentialAction: messageCardObj.potentialAction
   }
 
-  if (potentialAction.length > 0) {
-    messageCard.potentialAction = potentialAction
+  if (messageCardObj.potentialAction.length > 0) {
+    messageCard.potentialAction = messageCardObj.potentialAction
   }
   return messageCard
 }

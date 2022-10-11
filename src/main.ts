@@ -5,7 +5,7 @@ import axiosRetry from 'axios-retry'
 import moment from 'moment-timezone'
 import {createMessageCard} from './message-card'
 import yaml from 'yaml'
-import {Fact} from './models'
+import {Fact, PotentialAction} from './models'
 import * as github from '@actions/github'
 
 const escapeMarkdownTokens = (text: string) =>
@@ -54,7 +54,7 @@ async function run(): Promise<void> {
         if (Array.isArray(customFactsList)) {
           ;(customFactsList as any[]).forEach(fact => {
             if (fact.name !== undefined && fact.value !== undefined) {
-              factsObj.push(new Fact(fact.name + ':', '`' + fact.value + '`'))
+              factsObj.push(new Fact(fact.name + ':', fact.value))
               customFactsCounter++
             }
           })
@@ -64,6 +64,33 @@ async function run(): Promise<void> {
         })
       } catch {
         console.log('Invalid custom-facts value.')
+      }
+    }
+
+    const customActions = core.getInput('custom-actions')
+    let actionsObj: PotentialAction[] = []
+
+    // Read custom actions from input
+    if (customActions && customActions.toLowerCase() !== 'null') {
+      try {
+        let customActionsCounter = 0
+        const customActionsList = yaml.parse(customActions)
+        if (Array.isArray(customActionsList)) {
+          ;(customActionsList as any[]).forEach(action => {
+            if (action.text !== undefined && action.url !== undefined) {
+              actionsObj.push(new PotentialAction(action.text, [action.url]))
+              customActionsCounter++
+            }
+          })
+        }
+        core.group('Custom Actions', async () => {
+          console.log(
+            `Added ${customActionsCounter} custom actions:`,
+            actionsObj
+          )
+        })
+      } catch {
+        console.log('Invalid custom-actions value.')
       }
     }
 
@@ -108,6 +135,7 @@ async function run(): Promise<void> {
       commit: commit,
       description: description,
       factsObj: factsObj,
+      potentialAction: actionsObj,
       notificationSummary: notificationSummary,
       notificationColor: notificationColor,
       pullNumber: pullNumber,

@@ -39,6 +39,11 @@ All credit to **[jdcargile](https://github.com/jdcargile/ms-teams-notification)*
                   value: The next fact to communicate
                 - name: ...
                   value: ...
+              custom-actions: 
+                - text: View PR
+                  url: "http://valid.uri.com"
+                - text: View CI
+                  url: "http://example.com/${{ github.run_id }}"
               description: Text description to be communicated under titile
               github-token: ${{ github.token }} # will use the runner's token.
               ms-teams-webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
@@ -52,6 +57,7 @@ All credit to **[jdcargile](https://github.com/jdcargile/ms-teams-notification)*
 
 1. Make it your own with the following configurations.
     - `custom-facts:` - **(optional)** A yaml list of facts to be added to the card. Credit to [toko-bifrost/ms-teams-deploy-card](https://github.com/toko-bifrost/ms-teams-deploy-card)
+    - `custom-actions:` - **(optional)** A yaml list of actions to be added to the card. Credit to [toko-bifrost/ms-teams-deploy-card](https://github.com/toko-bifrost/ms-teams-deploy-card)
     - `description:` - **(optional)** Text to describe the card.
     - `github-token:` - **(required)**, set to the following:
       - `${{ github.token }}`

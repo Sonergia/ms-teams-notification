@@ -8,6 +8,9 @@ inputs:
   custom-facts:
     description: YAML-parseable multiline string defining the list of object with name and value to display on the facts table
     required: false
+  custom-actions:
+    description: Add more actions and links on cozy and complete layout
+    required: false
   description:
     description: Text description to be communicated under titile
     required: false

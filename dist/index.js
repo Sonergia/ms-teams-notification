@@ -6411,12 +6411,13 @@ module.exports = require("child_process");
 /***/ }),
 
 /***/ 131:
-/***/ (function(__unusedmodule, exports) {
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createMessageCard = void 0;
+const models_1 = __webpack_require__(409);
 function createMessageCard(messageCardObj) {
     var _a;
     let potentialAction = [];
@@ -6424,22 +6425,14 @@ function createMessageCard(messageCardObj) {
         ? messageCardObj.author.avatar_url
         : 'https://www.gravatar.com/avatar/05b6d8cc7c662bf81e01b39254f88a48?d=identicon';
     if (messageCardObj.viewChanges) {
-        potentialAction.push({
-            '@context': 'http://schema.org',
-            target: [messageCardObj.commit.data.html_url],
-            '@type': 'ViewAction',
-            name: 'View Commit Changes'
-        });
+        messageCardObj.potentialAction.unshift(new models_1.PotentialAction('View Commit Changes', [
+            messageCardObj.commit.data.html_url
+        ]));
     }
     if (messageCardObj.viewWorkflowRun) {
-        potentialAction.push({
-            '@context': 'http://schema.org',
-            target: [
-                `${messageCardObj.repoUrl}/actions/runs/${messageCardObj.runId}`
-            ],
-            '@type': 'ViewAction',
-            name: 'View Workflow Run'
-        });
+        messageCardObj.potentialAction.unshift(new models_1.PotentialAction('View Workflow Run', [
+            `${messageCardObj.repoUrl}/actions/runs/${messageCardObj.runId}`
+        ]));
     }
     if (messageCardObj.viewPullRequest && messageCardObj.pullNumber != '') {
         let name = 'View Pull Request';
@@ -6448,12 +6441,7 @@ function createMessageCard(messageCardObj) {
             name = 'View Review';
             target = [messageCardObj.pullReview];
         }
-        potentialAction.push({
-            '@context': 'http://schema.org',
-            target: target,
-            '@type': 'ViewAction',
-            name: name
-        });
+        messageCardObj.potentialAction.unshift(new models_1.PotentialAction(name, target));
     }
     const messageCard = {
         '@type': 'MessageCard',
@@ -6472,10 +6460,10 @@ function createMessageCard(messageCardObj) {
                 facts: messageCardObj.factsObj
             }
         ],
-        potentialAction: potentialAction
+        potentialAction: messageCardObj.potentialAction
     };
-    if (potentialAction.length > 0) {
-        messageCard.potentialAction = potentialAction;
+    if (messageCardObj.potentialAction.length > 0) {
+        messageCard.potentialAction = messageCardObj.potentialAction;
     }
     return messageCard;
 }
@@ -8264,7 +8252,7 @@ function run() {
                         ;
                         customFactsList.forEach(fact => {
                             if (fact.name !== undefined && fact.value !== undefined) {
-                                factsObj.push(new models_1.Fact(fact.name + ':', '`' + fact.value + '`'));
+                                factsObj.push(new models_1.Fact(fact.name + ':', fact.value));
                                 customFactsCounter++;
                             }
                         });
@@ -8275,6 +8263,30 @@ function run() {
                 }
                 catch (_a) {
                     console.log('Invalid custom-facts value.');
+                }
+            }
+            const customActions = core.getInput('custom-actions');
+            let actionsObj = [];
+            // Read custom actions from input
+            if (customActions && customActions.toLowerCase() !== 'null') {
+                try {
+                    let customActionsCounter = 0;
+                    const customActionsList = yaml_1.default.parse(customActions);
+                    if (Array.isArray(customActionsList)) {
+                        ;
+                        customActionsList.forEach(action => {
+                            if (action.text !== undefined && action.url !== undefined) {
+                                actionsObj.push(new models_1.PotentialAction(action.text, [action.url]));
+                                customActionsCounter++;
+                            }
+                        });
+                    }
+                    core.group('Custom Actions', () => __awaiter(this, void 0, void 0, function* () {
+                        console.log(`Added ${customActionsCounter} custom actions:`, actionsObj);
+                    }));
+                }
+                catch (_b) {
+                    console.log('Invalid custom-actions value.');
                 }
             }
             const notificationSummary = core.getInput('notification-summary') || 'GitHub Action Notification';
@@ -8310,6 +8322,7 @@ function run() {
                 commit: commit,
                 description: description,
                 factsObj: factsObj,
+                potentialAction: actionsObj,
                 notificationSummary: notificationSummary,
                 notificationColor: notificationColor,
                 pullNumber: pullNumber,
@@ -15727,7 +15740,18 @@ module.exports = _regeneratorRuntime, module.exports.__esModule = true, module.e
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Fact = void 0;
+exports.Fact = exports.PotentialAction = void 0;
+class PotentialAction {
+    constructor(name, target) {
+        this['@context'] = 'http://schema.org';
+        this['@type'] = 'ViewAction';
+        this.name = '';
+        this.target = [];
+        this.name = name;
+        this.target = target;
+    }
+}
+exports.PotentialAction = PotentialAction;
 class Fact {
     constructor(name, value) {
         this.name = name;
